@@ -2,16 +2,6 @@
 
 A free, single-file hunting map: public land from the USGS Protected Areas Database (PAD-US), satellite / topo / road basemaps, GPS, and your own saved spots.
 
-## Put it online for free (GitHub Pages, about 5 minutes)
-
-1. Make a free account at github.com.
-2. Click **New repository**, name it `public-ground`, set it to Public, and create it.
-3. Click **Add file > Upload files**, drag in `index.html`, and commit.
-4. Go to **Settings > Pages**. Under "Branch" pick `main` and `/ (root)`, then Save.
-5. After a minute your map is live at `https://YOUR-USERNAME.github.io/public-ground/`.
-
-It has to be served over https (GitHub Pages does this) for GPS to work on your phone.
-
 ## Put it on your phone like an app
 
 - iPhone (Safari): open the link, tap Share, then **Add to Home Screen**.

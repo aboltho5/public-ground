@@ -16,7 +16,12 @@
   }
   function hideMe() { if (meMarker) { map.removeLayer(meMarker); map.removeLayer(meCircle); meMarker = meCircle = null; } }
   function gpsError(err) {
-    PG.toast(err.code === 1 ? "Location is blocked. Allow it for this site in your browser or phone settings." : "Couldn't get a GPS fix. Try again with a clearer view of the sky.");
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var msg = err.code === 1
+      ? (ios ? "Your iPhone denied location. Check Settings > Privacy & Security > Location Services: it must be on, and Safari Websites must be set to While Using." : "Location is blocked. Allow it for this site in your browser or phone settings.")
+      : err.code === 3 ? "GPS timed out. Try again with a clearer view of the sky."
+      : "Your phone couldn't work out where you are. Make sure Location Services is on, then try again.";
+    PG.toast(msg + " (code " + err.code + ")", 9000);
     if (err.code === 1) { Array.from(gps.reasons).forEach(function (r) { PG.emit("gps-denied", r); }); gps.reasons.clear(); stopWatch(); }
   }
   function stopWatch() { if (gps.watchId !== null) navigator.geolocation.clearWatch(gps.watchId); gps.watchId = null; hideMe(); }

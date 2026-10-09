@@ -1,5 +1,5 @@
 /* Public Ground service worker: keeps the app working offline and serves downloaded map tiles. */
-var VERSION = "v2.0.0";
+var VERSION = "v2.0.1";
 var SHELL = "pg-shell-" + VERSION;
 var TILES = "pg-tiles-v1";
 var FONTS = "pg-fonts-v1";

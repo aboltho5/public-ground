@@ -66,9 +66,12 @@
     if (current && window.innerWidth < 900) { if (current !== "sheetEdit" && current !== "sheetLog") UI.closeSheets(); return; }
     var list = PG.landAt(e.latlng);
     var anyShown = PG.landLayers.some(function (c) { return PG.prefs.layers[c.id] && c.fill && map.getZoom() >= c.minZoom; });
-    var mark = '<div class="acts"><button data-markhere="' + e.latlng.lat.toFixed(6) + ',' + e.latlng.lng.toFixed(6) + '">Mark a spot here</button></div>';
+    var county = PG.countyViewer(e.latlng);
+    var mark = '<div class="acts"><button data-markhere="' + e.latlng.lat.toFixed(6) + ',' + e.latlng.lng.toFixed(6) + '">Mark a spot here</button>' +
+      (county ? '<a href="' + esc(county.url) + '" target="_blank" rel="noopener">Owner lookup</a>' : '') + '</div>' +
+      (county ? '<p class="tip">Owner lookup opens the ' + esc(county.name) + ' parcel map at this spot. Tap the parcel there to see the owner.</p>' : '');
     if (list.length) L.popup({ maxWidth: 300 }).setLatLng(e.latlng).setContent(PG.landPopupHtml(list) + mark).openOn(map);
-    else if (anyShown) L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent('<div class="pop"><h3>No public land mapped here</h3><p class="tip">Treat it as private unless you have permission. Small or newly bought parcels can be missing, so check signs on the ground.</p>' + mark + '</div>').openOn(map);
+    else if (anyShown || county) L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent('<div class="pop"><h3>No public land mapped here</h3><p class="tip">Treat it as private unless you have permission. Small or newly bought parcels can be missing, so check signs on the ground.</p>' + mark + '</div>').openOn(map);
   });
   map.on("contextmenu", function (e) {
     if (PG.Draw.active || placing) return;

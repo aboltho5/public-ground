@@ -345,6 +345,22 @@
     }).join("") + '</div>';
   };
 
+  // ---------- county parcel viewers (owner lookups open the county's own map) ----------
+  // The counties' terms don't allow copying their parcel data into other apps, so we link out instead.
+  var COUNTY_VIEWERS = [
+    { name: "Newaygo County", bbox: [-86.045, 43.290, -85.555, 43.8155],
+      url: "https://arcgisweb.countyofnewaygo.com/portal/apps/webappviewer/index.html?id=6f09e33488614e8eabd2e8a0f006a9be" },
+    { name: "Lake County", bbox: [-86.045, 43.8155, -85.555, 44.168],
+      url: "https://lakecounty-mi.maps.arcgis.com/apps/webappviewer/index.html?id=afaee30ca6e542c0876f9996d9d72452" }
+  ];
+  PG.countyViewer = function (latlng) {
+    var c = COUNTY_VIEWERS.find(function (v) {
+      return latlng.lng >= v.bbox[0] && latlng.lng <= v.bbox[2] && latlng.lat >= v.bbox[1] && latlng.lat <= v.bbox[3];
+    });
+    if (!c) return null;
+    return { name: c.name, url: c.url + "&center=" + latlng.lng.toFixed(6) + "," + latlng.lat.toFixed(6) + "&level=17" };
+  };
+
   // ---------- layer toggles UI ----------
   function toggleHtml(cfg) {
     var c = cfg.swatch || cfg.color({});

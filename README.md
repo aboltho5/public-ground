@@ -23,7 +23,7 @@ Live at: https://aboltho5.github.io/public-ground/
 - Groups, with a show/hide toggle for each group.
 - Good winds: tag which winds work for a stand. It gets a green ring on days the wind is right.
 - Photos. These stay on the device that took them.
-- Hunt log: log each sit with time, wind, deer seen and notes.
+- Hunt log: tap a stand or blind on the map and hit **Log sit**. Spin the wheels for bucks and does seen, and the wind fills itself in.
 - Go to: an arrow and distance that guide you to the spot on foot.
 - Share: sends a link that drops the spot on a buddy's map.
 
@@ -31,6 +31,12 @@ Live at: https://aboltho5.github.io/public-ground/
 - Shooting light for today and tomorrow, worked out for your exact location. The rule is 30 minutes before sunrise to 30 minutes after sunset (Michigan deer hours). The chip at the top counts down the last hour.
 - Wind now plus the next 12 hours, with an arrow showing where your scent drifts.
 - Track your walk. It records your path so you can follow it back. The screen stays on while recording, because phones pause web apps when the screen locks.
+
+**Weather** (cloud button, or tap the weather chip next to the wind)
+- Next hour: temperature, conditions and rain chance, plus a heads-up when rain or snow is likely in the next 12 hours.
+- Rain chance by hour for the next 12 hours.
+- 7-day forecast with highs and lows, rain chance and amount, wind, and the moon phase for each night.
+- Moon: tonight's phase, how much is lit, moonrise and moonset, the next full and new moon, and a 30-day moon calendar. Moon info is worked out on the phone, so it works offline.
 
 **Measure & draw** (pencil button)
 - Lines show distance. Areas show acreage. Save them to mark trails, bedding, food plots or permission land.

@@ -150,6 +150,78 @@
     var a = approxTransit(w, lw, n), Jset = solarTransitJ(a, M, L), Jrise = Jnoon - (Jset - Jnoon);
     return { sunrise: fromJulian(Jrise), sunset: fromJulian(Jset), noon: fromJulian(Jnoon) };
   };
+  // ---------- moon (also adapted from SunCalc) ----------
+  function rightAscension(l, b) { return Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l)); }
+  function sunCoords(d) { var M = solarMeanAnomaly(d), L = eclipticLongitude(M); return { dec: declination(L, 0), ra: rightAscension(L, 0) }; }
+  function moonCoords(d) {
+    var L = rad * (218.316 + 13.176396 * d), M = rad * (134.963 + 13.064993 * d), F = rad * (93.272 + 13.229350 * d);
+    var l = L + rad * 6.289 * Math.sin(M), b = rad * 5.128 * Math.sin(F), dt = 385001 - 20905 * Math.cos(M);
+    return { ra: rightAscension(l, b), dec: declination(l, b), dist: dt };
+  }
+  PG.moonIllumination = function (date) {
+    var d = toDays(date), s = sunCoords(d), m = moonCoords(d), sdist = 149598000;
+    var phi = Math.acos(Math.sin(s.dec) * Math.sin(m.dec) + Math.cos(s.dec) * Math.cos(m.dec) * Math.cos(s.ra - m.ra));
+    var inc = Math.atan2(sdist * Math.sin(phi), m.dist - sdist * Math.cos(phi));
+    var angle = Math.atan2(Math.cos(s.dec) * Math.sin(s.ra - m.ra), Math.sin(s.dec) * Math.cos(m.dec) - Math.cos(s.dec) * Math.sin(m.dec) * Math.cos(s.ra - m.ra));
+    return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math.PI };
+  };
+  function moonAltitude(date, lat, lng) {
+    var lw = rad * -lng, phi = rad * lat, d = toDays(date), c = moonCoords(d);
+    var H = rad * (280.16 + 360.9856235 * d) - lw - c.ra;
+    var h = Math.asin(Math.sin(phi) * Math.sin(c.dec) + Math.cos(phi) * Math.cos(c.dec) * Math.cos(H));
+    var hr = h < 0 ? 0 : h;
+    return h + 0.0002967 / Math.tan(hr + 0.00312536 / (hr + 0.08901179));
+  }
+  PG.moonTimes = function (date, lat, lng) {
+    var t = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    function later(h) { return new Date(t.getTime() + h * 36e5); }
+    var hc = 0.133 * rad, h0 = moonAltitude(t, lat, lng) - hc, rise, set;
+    for (var i = 1; i <= 24; i += 2) {
+      var h1 = moonAltitude(later(i), lat, lng) - hc, h2 = moonAltitude(later(i + 1), lat, lng) - hc;
+      var a = (h0 + h2) / 2 - h1, b = (h2 - h0) / 2, xe = -b / (2 * a), ye = (a * xe + b) * xe + h1, disc = b * b - 4 * a * h1, roots = 0, x1 = 0, x2 = 0;
+      if (disc >= 0) {
+        var dx = Math.sqrt(disc) / (Math.abs(a) * 2); x1 = xe - dx; x2 = xe + dx;
+        if (Math.abs(x1) <= 1) roots++; if (Math.abs(x2) <= 1) roots++; if (x1 < -1) x1 = x2;
+      }
+      if (roots === 1) { if (h0 < 0) rise = i + x1; else set = i + x1; }
+      else if (roots === 2) { rise = i + (ye < 0 ? x2 : x1); set = i + (ye < 0 ? x1 : x2); }
+      if (rise != null && set != null) break;
+      h0 = h2;
+    }
+    return { rise: rise != null ? later(rise) : null, set: set != null ? later(set) : null };
+  };
+  PG.moonPhaseName = function (p) {
+    if (p < 0.03 || p > 0.97) return "New moon";
+    if (p < 0.22) return "Waxing crescent";
+    if (p < 0.28) return "First quarter";
+    if (p < 0.47) return "Waxing gibbous";
+    if (p < 0.53) return "Full moon";
+    if (p < 0.72) return "Waning gibbous";
+    if (p < 0.78) return "Last quarter";
+    return "Waning crescent";
+  };
+  // next full and new moon after a date (searched in 1-hour steps)
+  PG.nextMoons = function (from) {
+    var out = {}, prev = PG.moonIllumination(from).phase;
+    for (var h = 1; h <= 24 * 32 && !(out.full && out.newMoon); h++) {
+      var d = new Date(from.getTime() + h * 36e5), p = PG.moonIllumination(d).phase;
+      if (!out.full && prev < 0.5 && p >= 0.5) out.full = d;
+      if (!out.newMoon && prev > 0.9 && p < 0.1) out.newMoon = d;
+      prev = p;
+    }
+    return out;
+  };
+  PG.moonSvg = function (phase, size) {
+    var r = 10;
+    var waxing = phase < 0.5, lit = waxing ? phase * 2 : (1 - phase) * 2; // 0 new .. 1 full
+    var rx = Math.abs(Math.cos(Math.PI * lit)) * r, gibbous = lit > 0.5, path;
+    if (lit < 0.03) path = "";
+    else if (lit > 0.97) path = '<circle cx="12" cy="12" r="10" fill="#f2ead2"/>';
+    else if (waxing) path = '<path fill="#f2ead2" d="M12 2A10 10 0 0 1 12 22A' + rx.toFixed(2) + ' 10 0 0 ' + (gibbous ? 1 : 0) + ' 12 2Z"/>';
+    else path = '<path fill="#f2ead2" d="M12 2A10 10 0 0 0 12 22A' + rx.toFixed(2) + ' 10 0 0 ' + (gibbous ? 0 : 1) + ' 12 2Z"/>';
+    return '<svg class="moon" viewBox="0 0 24 24" width="' + (size || 24) + '" height="' + (size || 24) + '" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#3b4440"/>' + path + '<circle cx="12" cy="12" r="10" fill="none" stroke="#8b958d" stroke-width=".8"/></svg>';
+  };
+
   PG.legalLight = function (date, lat, lng) {
     var s = PG.sunTimes(date, lat, lng); if (!s) return null;
     return { start: new Date(s.sunrise.getTime() - 30 * 6e4), sunrise: s.sunrise, sunset: s.sunset, end: new Date(s.sunset.getTime() + 30 * 6e4) };

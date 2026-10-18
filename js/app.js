@@ -5,8 +5,8 @@
   var UI = PG.UI = {};
 
   // ---------- sheets ----------
-  var SHEETS = ["sheetLayers", "sheetSpots", "sheetField", "sheetTools", "sheetMenu", "sheetEdit", "sheetLog", "sheetShared"];
-  var RAIL = { sheetLayers: "btnLayers", sheetSpots: "btnSpots", sheetField: "btnField", sheetTools: "btnTools", sheetMenu: "btnMenu" };
+  var SHEETS = ["sheetLayers", "sheetSpots", "sheetField", "sheetWeather", "sheetTools", "sheetMenu", "sheetEdit", "sheetLog", "sheetShared"];
+  var RAIL = { sheetLayers: "btnLayers", sheetSpots: "btnSpots", sheetField: "btnField", sheetWeather: "btnWeather", sheetTools: "btnTools", sheetMenu: "btnMenu" };
   var current = null;
   UI.openSheet = function (id, opts) {
     var keepEditor = opts && opts.keepEditor;
@@ -17,6 +17,7 @@
     current = id;
     if (id === "sheetSpots") PG.Items.renderList();
     if (id === "sheetField") PG.Field.renderSheet();
+    if (id === "sheetWeather") PG.Weather.open();
     if (id === "sheetMenu") { PG.Offline.render(); PG.Sync.render(); PG.Offline.storageInfo(); }
   };
   UI.closeSheets = function () { UI.openSheet(null); };

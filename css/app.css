@@ -78,7 +78,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .rbtn.on svg { stroke: var(--bg); }
 .rbtn.primary { background: var(--accent); border-color: var(--accent); }
 .rbtn.primary svg { stroke: var(--accent-ink); }
-@media (max-height: 620px) { .rbtn { width: 40px; height: 40px; } .rail { gap: 5px; } }
+@media (max-height: 720px) { .rbtn { width: 40px; height: 40px; } .rail { gap: 5px; } }
 
 .hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--sab) + 34px); z-index: 900; background: var(--ink); color: var(--bg); font-size: 13px; padding: 6px 12px; border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap; }
 
@@ -282,3 +282,56 @@ ol.steps a { color: var(--accent); }
 .dmu-label::before { display: none; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Weather sheet */
+.chip .wxicon { width: 18px; height: 18px; margin: 0 -2px 0 -4px; }
+.chip.wet { border-color: #3b82c4; box-shadow: 0 0 0 1px #3b82c4, var(--shadow); }
+.wxnow { display: flex; gap: 14px; align-items: center; }
+.wxnow .wxicon { flex: none; }
+.wxnow .big { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.1; }
+.wxnow .sm { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+.wxnow .wxalert.on { color: #3b82c4; font-weight: 600; }
+.popbars { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+.popbars > div { flex: 1 0 34px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.popbars .pbar { width: 14px; height: 56px; background: var(--bg); border-radius: 4px; display: flex; align-items: flex-end; overflow: hidden; }
+.popbars .pbar i { display: block; width: 100%; background: #3b82c4; border-radius: 4px 4px 0 0; }
+.popbars .pbar i.snow { background: #7fb2d9; }
+.popbars .pv { color: var(--muted); }
+.popbars b { font-weight: 600; }
+.popbars .tv { color: var(--muted); }
+.days { display: flex; flex-direction: column; }
+.day { display: grid; grid-template-columns: 50px 30px minmax(0, 1fr) 42px 64px 24px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.day:last-child { border-bottom: 0; }
+.day .dn { font-weight: 700; }
+.day .cond { font-size: 14px; min-width: 0; }
+.day .cond small { display: block; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day .pop { font-size: 13px; color: var(--muted); text-align: right; }
+.day .pop.hi { color: #3b82c4; font-weight: 700; }
+.day .temps { text-align: right; color: var(--muted); }
+.day .temps b { color: var(--ink); margin-right: 6px; }
+.day .mo { display: grid; place-items: center; }
+.mooncard { display: flex; gap: 14px; align-items: center; }
+.mooncard .big { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.mooncard .sm { font-size: 13.5px; color: var(--muted); }
+.moonnext { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.moonnext div { background: var(--bg); border-radius: 10px; padding: 8px 12px; }
+.moonnext small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.moonnext strong { font-size: 15px; }
+.moonweek { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 4px; }
+.moonweek div { flex: none; width: 46px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; border-radius: 8px; }
+.moonweek div.today { background: var(--bg); }
+.moonweek small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* Log a sit: bucks and does wheels */
+.logfor { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.wheels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wheelbox { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wl { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; }
+.wheelwrap { position: relative; width: 100%; max-width: 160px; }
+.wheelwrap::before { content: ""; position: absolute; left: 0; right: 0; top: 44px; height: 44px; border-radius: 10px; background: var(--bg); border: 1.5px solid var(--accent); pointer-events: none; }
+.wheel { position: relative; height: 132px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); border-radius: 10px; }
+.wheel::-webkit-scrollbar { display: none; }
+.wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wheel .pad { height: 44px; }
+.wheel .wi { height: 44px; display: grid; place-items: center; scroll-snap-align: center; font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums; user-select: none; }
+.wheel .wi.sel { color: var(--ink); font-size: 30px; font-weight: 700; }

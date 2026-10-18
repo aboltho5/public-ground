@@ -34,6 +34,7 @@
 <div class="chips">
   <button id="chipLight" class="chip" hidden></button>
   <button id="chipWind" class="chip" hidden></button>
+  <button id="chipWx" class="chip" hidden></button>
   <span id="chipOffline" class="chip warn" hidden>Offline</span>
   <button id="chipTrack" class="chip rec" hidden></button>
 </div>
@@ -47,6 +48,9 @@
   </button>
   <button class="rbtn" id="btnField" title="Wind, light and tracking" aria-label="Wind, light and tracking">
     <svg viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg>
+  </button>
+  <button class="rbtn" id="btnWeather" title="Weather and moon" aria-label="Weather and moon">
+    <svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 11.5 3.25 3.25 0 0 0 7 18z"/><path d="M9 21l1-1.5M13 21l1-1.5"/></svg>
   </button>
   <button class="rbtn" id="btnTools" title="Measure and draw" aria-label="Measure and draw">
     <svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21H3v-4z"/><path d="m14 6 4 4M10 10l2 2M7 13l2 2"/></svg>
@@ -155,6 +159,15 @@
   </div>
 </section>
 
+<!-- Weather -->
+<section class="sheet" id="sheetWeather" hidden aria-label="Weather and moon">
+  <header><h2>Weather</h2><button class="x" data-close aria-label="Close">&times;</button></header>
+  <div class="body">
+    <div class="eyebrow">Next hour <span id="wxWhere" class="where"></span></div>
+    <div id="wxBox"><p class="empty">Loading the forecast...</p></div>
+  </div>
+</section>
+
 <!-- Tools -->
 <section class="sheet" id="sheetTools" hidden aria-label="Measure and draw">
   <header><h2>Measure &amp; draw</h2><button class="x" data-close aria-label="Close">&times;</button></header>
@@ -252,21 +265,25 @@
 </section>
 
 <!-- Log a sit -->
-<section class="sheet" id="sheetLog" hidden aria-label="Log a sit">
-  <header><h2>Log a sit</h2><button class="x" id="logCancelX" aria-label="Close">&times;</button></header>
+<section class="sheet tall" id="sheetLog" hidden aria-label="Log a sit">
+  <header><div><h2>Log a sit</h2><small id="logFor" class="logfor"></small></div><button class="x" id="logCancelX" aria-label="Close">&times;</button></header>
   <form id="logForm" autocomplete="off">
     <div class="body">
       <div class="field">
-        <label for="lWhen">When</label>
-        <input id="lWhen" type="datetime-local">
+        <label>Deer seen</label>
+        <div class="wheels">
+          <div class="wheelbox"><span class="wl">Bucks</span><div class="wheelwrap"><div class="wheel" id="wBucks" tabindex="0" role="spinbutton" aria-label="Bucks seen" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0"></div></div></div>
+          <div class="wheelbox"><span class="wl">Does</span><div class="wheelwrap"><div class="wheel" id="wDoes" tabindex="0" role="spinbutton" aria-label="Does seen" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0"></div></div></div>
+        </div>
+        <small class="fine" id="wTotal">No deer</small>
       </div>
       <div class="field">
         <label>Wind</label>
         <div class="winds" id="lWinds"></div>
       </div>
       <div class="field">
-        <label for="lSeen">Deer seen</label>
-        <input id="lSeen" type="number" min="0" max="999" inputmode="numeric" placeholder="0">
+        <label for="lWhen">When</label>
+        <input id="lWhen" type="datetime-local">
       </div>
       <div class="field">
         <label for="lNotes">What happened</label>
@@ -309,6 +326,7 @@
 <script src="js/layers.js"></script>
 <script src="js/items.js"></script>
 <script src="js/field.js"></script>
+<script src="js/weather.js"></script>
 <script src="js/offline.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>

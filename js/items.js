@@ -14,6 +14,7 @@
     { id: "other", label: "Other", glyph: "•", color: "#6b4fa0" }
   ];
   var TYPE = {}; TYPES.forEach(function (t) { TYPE[t.id] = t; });
+  var SIT_TYPES = ["stand", "blind", "other"];
   var COLORS = ["#e8601c", "#f2c230", "#2f8a3c", "#1d6fa5", "#a23fb5", "#c62f2f", "#ffffff", "#111111"];
   var KIND_LABEL = { spot: "Spot", line: "Line", area: "Area", track: "Track" };
   var ICON_LINE = '<svg viewBox="0 0 24 24"><path d="M4 18 10 8l5 6 5-9"/></svg>';
@@ -115,7 +116,8 @@
   function lastSit(i) {
     var l = (i.log || []).slice().sort(function (a, b) { return a.t < b.t ? 1 : -1; })[0];
     if (!l) return "";
-    return "Last sat " + PG.fmtDate(new Date(l.t)) + (l.wind ? ", " + l.wind + " wind" : "") + (l.seen != null && l.seen !== "" ? ", saw " + l.seen : "");
+    var saw = Items.sawText(l);
+    return "Last sat " + PG.fmtDate(new Date(l.t)) + (l.wind ? ", " + l.wind + " wind" : "") + (saw ? ", " + saw : "") + " (" + i.log.length + " sit" + (i.log.length === 1 ? "" : "s") + ")";
   }
 
   function popupHtml(i) {
@@ -138,7 +140,8 @@
       '<div class="popthumb" data-thumb="' + i.id + '"></div>' +
       (i.kind === "spot" ? '<div class="mono" style="color:var(--muted);margin-top:6px">' + PG.fmtLL(i.lat, i.lng) + '</div>' : '') +
       '<div class="acts">' +
-        '<button class="go" data-nav="' + i.id + '">' + (i.kind === "track" ? "Back to start" : "Go to") + '</button>' +
+        (i.kind === "spot" && SIT_TYPES.indexOf(i.type) >= 0 ? '<button class="go" data-logsit="' + i.id + '">Log sit</button>' : '') +
+        '<button' + (i.kind === "spot" && SIT_TYPES.indexOf(i.type) >= 0 ? '' : ' class="go"') + ' data-nav="' + i.id + '">' + (i.kind === "track" ? "Back to start" : "Go to") + '</button>' +
         '<button data-edit="' + i.id + '">Edit</button>' +
         '<button data-share="' + i.id + '">Share</button>' +
         '<a href="https://www.google.com/maps/dir/?api=1&destination=' + a[0].toFixed(6) + ',' + a[1].toFixed(6) + '" target="_blank" rel="noopener">Drive</a>' +
@@ -421,7 +424,8 @@
     var log = (ed.item.log || []).slice().sort(function (a, b) { return a.t < b.t ? 1 : -1; });
     $("fLog").innerHTML = log.length ? log.map(function (l) {
       var d = new Date(l.t);
-      var head = PG.fmtDate(d) + " " + PG.fmtTime(d) + (l.wind ? " · " + l.wind + (l.wind === "Calm" ? "" : " wind") : "") + (l.seen != null && l.seen !== "" ? " · saw " + l.seen : "");
+      var saw = Items.sawText(l);
+      var head = PG.fmtDate(d) + " " + PG.fmtTime(d) + (l.wind ? " · " + l.wind + (l.wind === "Calm" ? "" : " wind") : "") + (saw ? " · " + saw : "");
       return '<div class="logentry"><div class="meta"><strong>' + esc(head) + '</strong>' + (l.notes ? '<p>' + esc(l.notes) + '</p>' : '') + '</div>' +
         '<button type="button" class="logdel" data-dellog="' + l.id + '" aria-label="Delete this sit">&times;</button></div>';
     }).join("") + '<small class="fine">' + log.length + ' sit' + (log.length === 1 ? '' : 's') + ' logged</small>' : '<p class="empty">No sits logged yet.</p>';
@@ -440,26 +444,93 @@
     stored.log = ed.item.log.slice(); stored.logDeleted = ed.item.logDeleted.slice();
     Items.save(stored, { quiet: false });
   }
-  var logWind = "";
-  $("fAddLog").addEventListener("click", function () {
+  // scroll wheels for bucks and does
+  var ROW = 44;
+  function makeWheel(el, max, onChange) {
+    var html = '<div class="pad"></div>';
+    for (var i = 0; i <= max; i++) html += '<div class="wi" data-v="' + i + '">' + i + '</div>';
+    el.innerHTML = html + '<div class="pad"></div>';
+    var w = { el: el, max: max, value: 0 };
+    function sync() {
+      var v = Math.max(0, Math.min(max, Math.round(el.scrollTop / ROW)));
+      if (v !== w.value || !el.querySelector(".wi.sel")) {
+        w.value = v; el.setAttribute("aria-valuenow", v);
+        el.querySelectorAll(".wi.sel").forEach(function (n) { n.classList.remove("sel"); });
+        var n = el.querySelector('.wi[data-v="' + v + '"]'); if (n) n.classList.add("sel");
+        onChange();
+      }
+    }
+    var raf = 0;
+    el.addEventListener("scroll", function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(sync); });
+    el.addEventListener("click", function (e) { var n = e.target.closest(".wi"); if (n) w.set(+n.dataset.v, true); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); w.set(w.value - 1, true); }
+      if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "+") { e.preventDefault(); w.set(w.value + 1, true); }
+    });
+    w.set = function (v, smooth) {
+      v = Math.max(0, Math.min(max, v));
+      try { el.scrollTo({ top: v * ROW, behavior: smooth ? "smooth" : "auto" }); } catch (err) { el.scrollTop = v * ROW; }
+      if (!smooth) sync();
+    };
+    w.get = function () { return Math.max(0, Math.min(max, Math.round(el.scrollTop / ROW))); };
+    return w;
+  }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function updateTotal() {
+    var b = wheels.bucks.get(), d = wheels.does.get();
+    $("wTotal").textContent = b + d ? plural(b + d, "deer", "deer") + " total" : "No deer";
+  }
+  var wheels = {};
+  wheels.bucks = makeWheel($("wBucks"), 30, function () { updateTotal(); });
+  wheels.does = makeWheel($("wDoes"), 30, function () { updateTotal(); });
+
+  // what a sit says about deer seen, old entries only had a single count
+  Items.sawText = function (l) {
+    if (l.bucks != null || l.does != null) {
+      var b = l.bucks || 0, d = l.does || 0;
+      if (!b && !d) return "no deer";
+      return [b ? plural(b, "buck", "bucks") : "", d ? plural(d, "doe", "does") : ""].filter(Boolean).join(", ");
+    }
+    return l.seen != null && l.seen !== "" ? "saw " + l.seen : "";
+  };
+
+  var logWind = "", logCtx = null;
+  function openLog(ctx) {
+    logCtx = ctx;
+    var item = ctx.fromEditor ? ed.item : Items.get(ctx.id);
+    $("logFor").textContent = item ? item.name : "";
     var now = new Date(); now.setSeconds(0, 0);
     $("lWhen").value = new Date(now.getTime() - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
     var w = PG.Field && PG.Field.windNow && PG.Field.windNow();
     logWind = w ? (w.speed < 2 ? "Calm" : PG.dirName(w.dir)) : "";
     pressed($("lWinds"), "data-wind", [logWind]);
-    $("lSeen").value = ""; $("lNotes").value = "";
-    PG.UI.openSheet("sheetLog", { keepEditor: true });
-  });
+    $("lNotes").value = "";
+    PG.UI.openSheet("sheetLog", { keepEditor: !!ctx.fromEditor });
+    // the wheels need to be visible before they can scroll
+    requestAnimationFrame(function () { wheels.bucks.set(0); wheels.does.set(0); updateTotal(); });
+  }
+  Items.quickLog = function (id) { if (Items.get(id)) openLog({ id: id, fromEditor: false }); };
+  $("fAddLog").addEventListener("click", function () { if (ed) openLog({ id: ed.item.id, fromEditor: true }); });
   $("lWinds").addEventListener("click", function (e) { var b = e.target.closest("[data-wind]"); if (!b) return; logWind = logWind === b.dataset.wind ? "" : b.dataset.wind; pressed($("lWinds"), "data-wind", [logWind]); });
   function backToEditor() { PG.UI.openSheet("sheetEdit", { keepEditor: true }); }
-  $("logCancel").addEventListener("click", backToEditor);
-  $("logCancelX").addEventListener("click", backToEditor);
+  function leaveLog() { var c = logCtx; logCtx = null; if (c && c.fromEditor && ed) backToEditor(); else PG.UI.closeSheets(); }
+  $("logCancel").addEventListener("click", leaveLog);
+  $("logCancelX").addEventListener("click", leaveLog);
   $("logForm").addEventListener("submit", function (e) {
-    e.preventDefault(); if (!ed) { backToEditor(); return; }
+    e.preventDefault(); if (!logCtx) { leaveLog(); return; }
     var when = $("lWhen").value ? new Date($("lWhen").value) : new Date();
-    var seen = $("lSeen").value === "" ? null : Math.max(0, parseInt($("lSeen").value, 10) || 0);
-    ed.item.log.push({ id: PG.uid(), t: when.toISOString(), wind: logWind, seen: seen, notes: $("lNotes").value.trim() });
-    commitLog(); renderLog(); backToEditor(); PG.toast("Sit logged");
+    var bucks = wheels.bucks.get(), does = wheels.does.get();
+    var entry = { id: PG.uid(), t: when.toISOString(), wind: logWind, bucks: bucks, does: does, seen: bucks + does, notes: $("lNotes").value.trim() };
+    if (logCtx.fromEditor && ed) {
+      ed.item.log.push(entry); commitLog(); renderLog(); leaveLog(); PG.toast("Sit logged");
+      return;
+    }
+    var stored = Items.get(logCtx.id);
+    if (!stored) { leaveLog(); return; }
+    stored.log = (stored.log || []).concat([entry]);
+    var name = stored.name;
+    leaveLog();
+    Items.save(stored).then(function () { PG.toast("Sit logged at " + name); });
   });
 
   // ---------- sharing ----------
@@ -501,8 +572,9 @@
 
   // popup buttons
   document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-edit],[data-share],[data-nav]"); if (!b) return;
-    if (b.dataset.edit) { map.closePopup(); Items.openEditor(b.dataset.edit); }
+    var b = e.target.closest("[data-edit],[data-share],[data-nav],[data-logsit]"); if (!b) return;
+    if (b.dataset.logsit) { map.closePopup(); Items.quickLog(b.dataset.logsit); }
+    else if (b.dataset.edit) { map.closePopup(); Items.openEditor(b.dataset.edit); }
     else if (b.dataset.share) Items.share(b.dataset.share);
     else if (b.dataset.nav) { map.closePopup(); var i = Items.get(b.dataset.nav); if (i) PG.Field.navigateTo(Items.anchor(i), i.name); }
   });

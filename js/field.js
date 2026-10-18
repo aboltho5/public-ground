@@ -182,6 +182,7 @@
   }
   function renderWind() {
     windChip();
+    if (PG.Weather) PG.Weather.update();
     if ($("sheetField").hidden) return;
     var w = Field.windNow();
     if (!w) { $("windBox").innerHTML = '<p class="empty">' + (PG.isOnline() ? "Loading wind..." : "Wind needs a signal. It will update when you're back online.") + '</p>'; return; }
@@ -217,21 +218,35 @@
     if (!force && wind && Date.now() - wind.fetched < 15 * 6e4 && PG.distance([wind.lat, wind.lng], [pl.lat, pl.lng]) < 15000) { renderWind(); return; }
     windBusy = true;
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + pl.lat.toFixed(3) + "&longitude=" + pl.lng.toFixed(3) +
-      "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
-      "&wind_speed_unit=mph&timezone=auto&forecast_hours=16";
+      "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,weather_code,is_day" +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation_probability,precipitation,weather_code,is_day" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant" +
+      "&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto&forecast_days=7";
     fetch(url).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (j) {
       var off = (j.utc_offset_seconds || 0) * 1000;
       function t(s) { return Date.parse(s + "Z") - off; }
+      var H = j.hourly, D = j.daily || { time: [] }, cutoff = Date.now() - 2 * 36e5;
       wind = {
         fetched: Date.now(), lat: pl.lat, lng: pl.lng, label: pl.label,
-        current: { t: t(j.current.time), dir: j.current.wind_direction_10m, speed: j.current.wind_speed_10m, gust: j.current.wind_gusts_10m },
-        hours: j.hourly.time.map(function (s, k) { return { t: t(s), dir: j.hourly.wind_direction_10m[k], speed: j.hourly.wind_speed_10m[k], gust: j.hourly.wind_gusts_10m[k] }; })
+        current: { t: t(j.current.time), dir: j.current.wind_direction_10m, speed: j.current.wind_speed_10m, gust: j.current.wind_gusts_10m,
+          temp: j.current.temperature_2m, code: j.current.weather_code, day: j.current.is_day },
+        hours: H.time.map(function (s, k) {
+          return { t: t(s), dir: H.wind_direction_10m[k], speed: H.wind_speed_10m[k], gust: H.wind_gusts_10m[k],
+            temp: H.temperature_2m && H.temperature_2m[k], pop: H.precipitation_probability && H.precipitation_probability[k],
+            precip: H.precipitation && H.precipitation[k], code: H.weather_code && H.weather_code[k], day: H.is_day && H.is_day[k] };
+        }).filter(function (h) { return h.t > cutoff; }),
+        daily: D.time.map(function (s, k) {
+          return { date: s, code: D.weather_code[k], hi: D.temperature_2m_max[k], lo: D.temperature_2m_min[k], pop: D.precipitation_probability_max[k],
+            precip: D.precipitation_sum[k], wind: D.wind_speed_10m_max[k], gust: D.wind_gusts_10m_max[k], dir: D.wind_direction_10m_dominant[k] };
+        })
       };
       PG.local.set("publicground.wind.v1", wind);
       PG.emit("wind", wind);
     }).catch(function () {}).then(function () { windBusy = false; renderWind(); });
   };
   PG.on("wind", function () { PG.Items.refreshIcons(); });
+  Field.weatherData = function () { return wind; };
+  Field.renderWind = renderWind;
   setInterval(function () { if (!document.hidden) Field.fetchWind(); }, 5 * 6e4);
   map.on("moveend", PG.debounce(function () { Field.fetchWind(); }, 1500));
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { Field.fetchWind(); Field.updateLight(); } });

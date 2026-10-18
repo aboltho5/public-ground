@@ -1,11 +1,11 @@
 /* Public Ground service worker: keeps the app working offline and serves downloaded map tiles. */
-var VERSION = "v2.0.2";
+var VERSION = "v2.1.0";
 var SHELL = "pg-shell-" + VERSION;
 var TILES = "pg-tiles-v1";
 var FONTS = "pg-fonts-v1";
 var SHELL_FILES = [
   "./", "index.html", "css/app.css",
-  "js/core.js", "js/layers.js", "js/items.js", "js/field.js", "js/offline.js", "js/sync.js", "js/app.js",
+  "js/core.js", "js/layers.js", "js/items.js", "js/field.js", "js/weather.js", "js/offline.js", "js/sync.js", "js/app.js",
   "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"
 ];
